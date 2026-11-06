@@ -105,7 +105,7 @@ function ChessApp() {
   function play(move) {
     const before=clone(game),next=clone(game),marker=applyMove(next,move);
     const notation=`${squareName(move.from)} ${marker} ${squareName(move.to)}${move.promotion?"="+move.promotion.toUpperCase():""}`;
-    setUndoStack(stack=>[...stack,{state:before,move}]);setGame(next);setLastMove(move);setSelected(null);setTargets([]);setPromotion(null);setMoveLog(log=>[...log,notation]);
+    setUndoStack(stack=>[...stack,{state:before,move}]);setGame(next);setLastMove(move);setFlipped(v=>!v);setSelected(null);setTargets([]);setPromotion(null);setMoveLog(log=>[...log,notation]);
   }
   function clickSquare(sq) {
     if(result)return;
@@ -117,11 +117,11 @@ function ChessApp() {
   function undo() {
     if(!undoStack.length)return;
     const entry=undoStack[undoStack.length-1],rest=undoStack.slice(0,-1);
-    setGame(entry.state);setUndoStack(rest);setMoveLog(log=>log.slice(0,-1));setLastMove(rest.length?rest[rest.length-1].move:null);setSelected(null);setTargets([]);setPromotion(null);
+    setGame(entry.state);setUndoStack(rest);setMoveLog(log=>log.slice(0,-1));setLastMove(rest.length?rest[rest.length-1].move:null);setFlipped(v=>!v);setSelected(null);setTargets([]);setPromotion(null);
   }
   function reset() {
     if(moveLog.length&&!window.confirm("Почати нову гру?"))return;
-    setGame(newPosition());setSelected(null);setTargets([]);setLastMove(null);setUndoStack([]);setMoveLog([]);setPromotion(null);
+    setGame(newPosition());setSelected(null);setTargets([]);setLastMove(null);setFlipped(false);setUndoStack([]);setMoveLog([]);setPromotion(null);
   }
   function displaySquare(dr,dc){return flipped?[7-dr,7-dc]:[dr,dc];}
 
