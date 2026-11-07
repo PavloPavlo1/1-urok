@@ -99,13 +99,13 @@ function gameOutcome(g) {
 function ChessApp() {
   const [game,setGame]=useState(newPosition),[selected,setSelected]=useState(null),[targets,setTargets]=useState([]);
   const [lastMove,setLastMove]=useState(null),[flipped,setFlipped]=useState(false),[undoStack,setUndoStack]=useState([]);
-  const [moveLog,setMoveLog]=useState([]),[promotion,setPromotion]=useState(null);
+  const [moveLog,setMoveLog]=useState([]),[promotion,setPromotion]=useState(null),[mode,setMode]=useState("duo");
   const result=gameOutcome(game);
 
   function play(move) {
     const before=clone(game),next=clone(game),marker=applyMove(next,move);
     const notation=`${squareName(move.from)} ${marker} ${squareName(move.to)}${move.promotion?"="+move.promotion.toUpperCase():""}`;
-    setUndoStack(stack=>[...stack,{state:before,move}]);setGame(next);setLastMove(move);setFlipped(v=>!v);setSelected(null);setTargets([]);setPromotion(null);setMoveLog(log=>[...log,notation]);
+    setUndoStack(stack=>[...stack,{state:before,move}]);setGame(next);setLastMove(move);if(mode==="solo")setFlipped(v=>!v);else setFlipped(false);setSelected(null);setTargets([]);setPromotion(null);setMoveLog(log=>[...log,notation]);
   }
   function clickSquare(sq) {
     if(result)return;
@@ -117,12 +117,13 @@ function ChessApp() {
   function undo() {
     if(!undoStack.length)return;
     const entry=undoStack[undoStack.length-1],rest=undoStack.slice(0,-1);
-    setGame(entry.state);setUndoStack(rest);setMoveLog(log=>log.slice(0,-1));setLastMove(rest.length?rest[rest.length-1].move:null);setFlipped(v=>!v);setSelected(null);setTargets([]);setPromotion(null);
+    setGame(entry.state);setUndoStack(rest);setMoveLog(log=>log.slice(0,-1));setLastMove(rest.length?rest[rest.length-1].move:null);if(mode==="solo")setFlipped(v=>!v);else setFlipped(false);setSelected(null);setTargets([]);setPromotion(null);
   }
   function reset() {
     if(moveLog.length&&!window.confirm("Почати нову гру?"))return;
     setGame(newPosition());setSelected(null);setTargets([]);setLastMove(null);setFlipped(false);setUndoStack([]);setMoveLog([]);setPromotion(null);
   }
+  function switchMode(){setMode(value=>value==="duo"?"solo":"duo");setFlipped(false);setSelected(null);setTargets([]);}
   function displaySquare(dr,dc){return flipped?[7-dr,7-dc]:[dr,dc];}
 
   return <main className="app">
@@ -136,7 +137,7 @@ function ChessApp() {
         if(selected&&sameSquare(selected,sq))cls+=" selected";if(checked)cls+=" checked";if(isTarget&&capture)cls+=" capture";
         return <button type="button" role="gridcell" aria-label={`${squareName(sq)}${piece?", "+(pieceColor(piece)==="w"?"біла":"чорна")+" фігура":""}`} className={cls} key={`${dr}-${dc}`} onClick={()=>clickSquare(sq)}>
           {piece&&<span className={`piece ${pieceColor(piece)==="w"?"white":"black"}`}>{SYMBOL[piece]}</span>}
-          {(dc===0||dr===7)&&<span className="coord">{dc===0?8-r:FILES[c]}</span>}
+          {(dc===0||dr===7)&&<span className="coord">{dc===0?8-dr:FILES[dc]}</span>}
           {isTarget&&!capture&&<i className="dot"/>}
         </button>;
       }))}
@@ -146,8 +147,8 @@ function ChessApp() {
       <div className={`status ${result?(result.startsWith("Мат")?"mate":"draw"):""}`}>{result||<>Хід {game.turn==="w"?"білих":"чорних"}{inCheck(game,game.turn)&&<><br/>Шах!</>}</>}</div>
       <div className="label">ІСТОРІЯ ХОДІВ</div>
       <div className="history">{moveLog.map((text,i)=><div className="history-row" key={i}>{Math.floor(i/2)+1}{i%2===0?". ":"… "}{text}</div>)}</div>
-      <div className="buttons"><button onClick={reset}>Нова гра</button><button onClick={undo}>Скасувати хід</button><button onClick={()=>setFlipped(v=>!v)}>Перевернути дошку</button></div>
-      <div className="help">Клацни свою фігуру, а потім клітинку призначення. Можливі ходи підсвічуються. Гра для двох людей за одним комп’ютером.</div>
+      <div className="buttons"><button onClick={reset}>Нова гра</button><button onClick={undo}>Скасувати хід</button><button onClick={switchMode}>Режим: {mode==="solo"?"Соло":"Дуо"}</button></div>
+      <div className="help">Білі починають. Клацни фігуру, потім клітинку для ходу. Соло — дошка перевертається після кожного ходу. Дуо — дошка не перевертається.</div>
     </aside>
     {promotion&&<div className="overlay" onClick={e=>{if(e.target===e.currentTarget)setPromotion(null);}}><section className="promo" aria-label="Перетворення пішака"><h3>Обери фігуру</h3><div className="promo-buttons">{[["q","Ферзь"],["r","Тура"],["b","Слон"],["n","Кінь"]].map(([kind,label])=>{const move=promotion.find(m=>m.promotion=== (game.turn==="w"?kind.toUpperCase():kind));return <button key={kind} onClick={()=>play(move)}><span className="symbol">{SYMBOL[move.promotion]}</span>{label}</button>;})}</div></section></div>}
   </main>;
